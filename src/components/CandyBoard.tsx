@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import CandyPiece from './CandyPiece';
-import { BOARD_SIZE, CANDY_TYPES, CANDY_TYPE, checkMatches, createBoard, generateNewCandies, swapCandies, MatchPosition } from '@/lib/gameLogic';
+import { BOARD_SIZE, CANDY_TYPES, CANDY_TYPE, checkMatches, createBoard, generateNewCandies, swapCandies } from '@/lib/gameLogic';
 import { toast } from "sonner";
 
 interface CandyBoardProps {
@@ -26,8 +26,7 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
 
   // Handle selecting a candy piece
   const handleCandyClick = (row: number, col: number) => {
-    if (animatingSwap || animatingRemove.length > 0 || animatingFall || moves <= 0) return;
-    
+    if (animatingSwap || animatingRemove.length > 0 || animatingFall) return;
     if (!selectedCandy) {
       setSelectedCandy({ row, col });
     } else {
@@ -78,7 +77,7 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
   };
 
   // Process matches and handle cascading effects
-  const processMatches = async (currentBoard: CANDY_TYPE[][], matches: MatchPosition[]) => {
+  const processMatches = async (currentBoard: CANDY_TYPE[][], matches: {row: number, col: number}[]) => {
     if (matches.length === 0) return;
     
     // Track candies to be removed for animation
@@ -88,10 +87,8 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
     const pointsEarned = matches.length * 10;
     setScore(score + pointsEarned);
     
-    // Create a deep copy of the board to avoid reference issues
-    let updatedBoard = JSON.parse(JSON.stringify(currentBoard));
-    
-    // Mark special candies and regular matched candies
+    // Check for special candy creation (4 in a row)
+    let updatedBoard = [...currentBoard];
     for (const match of matches) {
       if (match.special) {
         // Create striped candy
@@ -102,12 +99,7 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
         };
       } else {
         // Mark regular matched candies for removal
-        if (updatedBoard[match.row][match.col]) {
-          updatedBoard[match.row][match.col] = { 
-            ...updatedBoard[match.row][match.col], 
-            toRemove: true 
-          };
-        }
+        updatedBoard[match.row][match.col] = { ...updatedBoard[match.row][match.col], toRemove: true };
       }
     }
     
@@ -136,7 +128,7 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
   const removeMatchedCandies = (currentBoard: CANDY_TYPE[][]) => {
     // Remove matched candies (those marked with toRemove)
     let updatedBoard = currentBoard.map(row => 
-      row.map(candy => candy?.toRemove ? null : candy)
+      row.map(candy => candy.toRemove ? null : candy)
     );
     
     // Move candies down to fill gaps
@@ -175,7 +167,7 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
               isStriped={candy?.isStriped}
               stripeDirection={candy?.stripeDirection}
               toRemove={animatingRemove.some(m => m.row === rowIdx && m.col === colIdx)}
-              onClick={() => handleCandyClick(rowIdx, colIdx)}
+              onClick={() => moves > 0 && handleCandyClick(rowIdx, colIdx)}
               animateFall={animatingFall && candy && !candy.old}
             />
           ))}
