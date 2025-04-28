@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -98,4 +99,18 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Custom candy shapes */
+.candy-teardrop {
+  clip-path: polygon(50% 0%, 80% 30%, 100% 60%, 100% 100%, 0% 100%, 0% 60%, 20% 30%);
+}
+
+.candy-pentagon {
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+}
+
+/* Candy glow effect */
+.candy-glow {
+  filter: drop-shadow(0px 0px 3px rgba(255, 255, 255, 0.7));
 }
