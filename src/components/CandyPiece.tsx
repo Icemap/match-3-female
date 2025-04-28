@@ -20,49 +20,49 @@ const CandyPiece = ({
   onClick,
   animateFall
 }: CandyPieceProps) => {
-  // Determine candy appearance based on type
-  const getCandyStyles = () => {
+  // Get the appropriate image and style based on candy type
+  const getCandyImage = () => {
     switch(type) {
       case 'BLUE':
         return {
-          bg: 'bg-candy-blue',
-          shape: 'rounded-full',
-          innerShape: 'rounded-full border-4 border-white/30 w-3/4 h-3/4 m-auto'
+          src: "/lovable-uploads/96d6c87d-cbcf-4adf-9bf6-9deb2911efd7.png",
+          alt: "Music note",
+          bgColor: "bg-teal-100"
         };
       case 'GREEN':
         return {
-          bg: 'bg-candy-green',
-          shape: 'rounded-3xl',
-          innerShape: ''
+          src: "/lovable-uploads/d65d8548-3d54-4f42-87c8-694dc811d9f8.png",
+          alt: "Music note",
+          bgColor: "bg-transparent"
         };
       case 'YELLOW':
         return {
-          bg: 'bg-candy-yellow',
-          shape: 'candy-teardrop',
-          innerShape: ''
+          src: "/lovable-uploads/781cba0e-ea47-4f23-9a5d-a339b3a291c4.png",
+          alt: "Guitar",
+          bgColor: "bg-transparent"
         };
       case 'ORANGE':
         return {
-          bg: 'bg-candy-orange',
-          shape: 'candy-pentagon',
-          innerShape: ''
+          src: "/lovable-uploads/a0a5e075-ab16-4fb9-943b-cc018c773b9a.png",
+          alt: "Microphone",
+          bgColor: "bg-transparent"
         };
       case 'BROWN':
         return {
-          bg: 'bg-candy-brown',
-          shape: 'rounded',
-          innerShape: 'bg-candy-brown/70 rounded m-1'
+          src: "/lovable-uploads/98ec79c1-4f33-45cf-a235-a19eac39a8e8.png",
+          alt: "Graduation cap",
+          bgColor: "bg-gray-100"
         };
       default:
         return {
-          bg: 'bg-candy-blue',
-          shape: 'rounded-full',
-          innerShape: ''
+          src: "/lovable-uploads/96d6c87d-cbcf-4adf-9bf6-9deb2911efd7.png",
+          alt: "Music note",
+          bgColor: "bg-teal-100"
         };
     }
   };
 
-  const styles = getCandyStyles();
+  const imageInfo = getCandyImage();
 
   return (
     <div 
@@ -77,19 +77,23 @@ const CandyPiece = ({
     >
       <div 
         className={cn(
-          "w-full h-full flex items-center justify-center",
-          styles.bg,
-          styles.shape
+          "w-full h-full flex items-center justify-center rounded-md overflow-hidden",
+          imageInfo.bgColor
         )}
       >
-        {/* Inner shape for layered candies */}
-        {styles.innerShape && (
-          <div className={styles.innerShape}></div>
-        )}
+        {/* Image for candy */}
+        <img 
+          src={imageInfo.src} 
+          alt={imageInfo.alt}
+          className={cn(
+            "w-10 h-10 object-contain",
+            isSelected ? "scale-110" : ""
+          )}
+        />
 
-        {/* Striped patterns */}
+        {/* Striped patterns overlay */}
         {isStriped && stripeDirection === 'horizontal' && (
-          <div className="absolute inset-0 flex flex-col justify-around">
+          <div className="absolute inset-0 flex flex-col justify-around pointer-events-none">
             <div className="h-1.5 bg-white/50"></div>
             <div className="h-1.5 bg-white/50"></div>
             <div className="h-1.5 bg-white/50"></div>
@@ -97,7 +101,7 @@ const CandyPiece = ({
         )}
 
         {isStriped && stripeDirection === 'vertical' && (
-          <div className="absolute inset-0 flex flex-row justify-around">
+          <div className="absolute inset-0 flex flex-row justify-around pointer-events-none">
             <div className="w-1.5 bg-white/50"></div>
             <div className="w-1.5 bg-white/50"></div>
             <div className="w-1.5 bg-white/50"></div>

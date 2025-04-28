@@ -26,7 +26,8 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
 
   // Handle selecting a candy piece
   const handleCandyClick = (row: number, col: number) => {
-    if (animatingSwap || animatingRemove.length > 0 || animatingFall) return;
+    if (animatingSwap || animatingRemove.length > 0 || animatingFall || moves <= 0) return;
+    
     if (!selectedCandy) {
       setSelectedCandy({ row, col });
     } else {
@@ -47,8 +48,13 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
   // Swap candies and check for matches
   const swapAndCheck = async (row1: number, col1: number, row2: number, col2: number) => {
     setAnimatingSwap(true);
+    
     // Create a new board with swapped candies
-    const newBoard = swapCandies([...board], row1, col1, row2, col2);
+    const newBoard = JSON.parse(JSON.stringify(board)); // Deep clone board
+    const temp = { ...newBoard[row1][col1] };
+    newBoard[row1][col1] = { ...newBoard[row2][col2] };
+    newBoard[row2][col2] = temp;
+    
     setBoard(newBoard);
     
     // Wait for swap animation
@@ -59,7 +65,11 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
     
     if (matches.length === 0) {
       // No matches, swap back
-      const revertedBoard = swapCandies([...newBoard], row1, col1, row2, col2);
+      const revertedBoard = JSON.parse(JSON.stringify(newBoard)); // Deep clone
+      const temp = { ...revertedBoard[row1][col1] };
+      revertedBoard[row1][col1] = { ...revertedBoard[row2][col2] };
+      revertedBoard[row2][col2] = temp;
+      
       setBoard(revertedBoard);
       await new Promise(resolve => setTimeout(resolve, 300));
       setAnimatingSwap(false);
@@ -87,8 +97,10 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
     const pointsEarned = matches.length * 10;
     setScore(score + pointsEarned);
     
+    // Create a new board copy
+    const updatedBoard = JSON.parse(JSON.stringify(currentBoard));
+    
     // Check for special candy creation (4 in a row)
-    let updatedBoard = [...currentBoard];
     for (const match of matches) {
       if (match.special) {
         // Create striped candy
@@ -99,7 +111,9 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
         };
       } else {
         // Mark regular matched candies for removal
-        updatedBoard[match.row][match.col] = { ...updatedBoard[match.row][match.col], toRemove: true };
+        if (updatedBoard[match.row][match.col]) {
+          updatedBoard[match.row][match.col].toRemove = true;
+        }
       }
     }
     
@@ -108,8 +122,8 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
     setAnimatingRemove([]);
     
     // Remove matched candies and refill the board
-    updatedBoard = removeMatchedCandies(updatedBoard);
-    setBoard(updatedBoard);
+    const boardAfterRemoval = removeMatchedCandies(updatedBoard);
+    setBoard(boardAfterRemoval);
     setAnimatingFall(true);
     
     // Wait for falling animation
@@ -117,35 +131,65 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
     setAnimatingFall(false);
     
     // Check for any new matches created by falling candies
-    const newMatches = checkMatches(updatedBoard);
+    const newMatches = checkMatches(boardAfterRemoval);
     if (newMatches.length > 0) {
       // Chain reaction - process new matches
-      await processMatches(updatedBoard, newMatches);
+      await processMatches(boardAfterRemoval, newMatches);
     }
   };
 
   // Remove matched candies and refill the board
   const removeMatchedCandies = (currentBoard: CANDY_TYPE[][]) => {
-    // Remove matched candies (those marked with toRemove)
-    let updatedBoard = currentBoard.map(row => 
-      row.map(candy => candy.toRemove ? null : candy)
-    );
+    // Create a deep copy of the board
+    const updatedBoard = JSON.parse(JSON.stringify(currentBoard));
     
-    // Move candies down to fill gaps
+    // Remove matched candies (those marked with toRemove)
+    for (let row = 0; row < BOARD_SIZE.rows; row++) {
+      for (let col = 0; col < BOARD_SIZE.cols; col++) {
+        if (updatedBoard[row][col]?.toRemove) {
+          updatedBoard[row][col] = null;
+        }
+      }
+    }
+    
+    // Move candies down to fill gaps (column by column)
     for (let col = 0; col < BOARD_SIZE.cols; col++) {
-      let emptyCount = 0;
+      let emptySpaces = 0;
+      
+      // Start from bottom, count empty spaces and shift pieces down
       for (let row = BOARD_SIZE.rows - 1; row >= 0; row--) {
         if (updatedBoard[row][col] === null) {
-          emptyCount++;
-        } else if (emptyCount > 0) {
-          updatedBoard[row + emptyCount][col] = updatedBoard[row][col];
+          emptySpaces++;
+        } else if (emptySpaces > 0) {
+          // Move piece down by emptySpaces
+          updatedBoard[row + emptySpaces][col] = updatedBoard[row][col];
           updatedBoard[row][col] = null;
         }
       }
     }
     
     // Generate new candies to fill the top
-    return generateNewCandies(updatedBoard);
+    const types = Object.values(CANDY_TYPES).filter(type => type !== CANDY_TYPES.BROWN);
+    
+    for (let col = 0; col < BOARD_SIZE.cols; col++) {
+      for (let row = 0; row < BOARD_SIZE.rows; row++) {
+        if (updatedBoard[row][col] === null) {
+          // Add a 5% chance to create a blocker (brown)
+          const randomNum = Math.random();
+          if (randomNum < 0.05) {
+            updatedBoard[row][col] = { type: CANDY_TYPES.BROWN, old: false };
+          } else {
+            // Randomly select a valid candy type
+            const randomIndex = Math.floor(Math.random() * types.length);
+            updatedBoard[row][col] = { type: types[randomIndex], old: false };
+          }
+        } else if (updatedBoard[row][col]) {
+          updatedBoard[row][col] = { ...updatedBoard[row][col], old: true };
+        }
+      }
+    }
+    
+    return updatedBoard;
   };
 
   // Check if the game is over
@@ -167,7 +211,7 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
               isStriped={candy?.isStriped}
               stripeDirection={candy?.stripeDirection}
               toRemove={animatingRemove.some(m => m.row === rowIdx && m.col === colIdx)}
-              onClick={() => moves > 0 && handleCandyClick(rowIdx, colIdx)}
+              onClick={() => handleCandyClick(rowIdx, colIdx)}
               animateFall={animatingFall && candy && !candy.old}
             />
           ))}

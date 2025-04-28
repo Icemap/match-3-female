@@ -26,7 +26,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-candy-gradient">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-700 to-indigo-500">
       <div className="game-container max-w-sm w-full py-4 px-2">
         <GameHeader 
           score={score}
