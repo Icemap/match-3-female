@@ -29,8 +29,9 @@ const Index = () => {
     <div 
       className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
       style={{ 
-        backgroundImage: "url('/lovable-uploads/7fd245be-2b68-4dfa-a6ee-ed009e99db02.png')",
-        backgroundSize: 'cover'
+        backgroundImage: `url('${import.meta.env.BASE_URL}lovable-uploads/7fd245be-2b68-4dfa-a6ee-ed009e99db02.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
       }}
     >
       <div className="game-container max-w-sm w-full py-4 px-2">
