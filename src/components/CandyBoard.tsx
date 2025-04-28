@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import CandyPiece from './CandyPiece';
 import { BOARD_SIZE, CANDY_TYPES, CANDY_TYPE, checkMatches, createBoard, generateNewCandies, swapCandies } from '@/lib/gameLogic';
@@ -86,54 +85,36 @@ const CandyBoard = ({ score, setScore, moves, setMoves }: CandyBoardProps) => {
     await processMatches(newBoard, matches);
   };
 
-  // Process matches and handle cascading effects
+  // Update processMatches to remove the special and direction properties
   const processMatches = async (currentBoard: CANDY_TYPE[][], matches: {row: number, col: number}[]) => {
     if (matches.length === 0) return;
     
-    // Track candies to be removed for animation
     setAnimatingRemove(matches);
     
-    // Add points based on matches
     const pointsEarned = matches.length * 10;
     setScore(score + pointsEarned);
     
-    // Create a new board copy
     const updatedBoard = JSON.parse(JSON.stringify(currentBoard));
     
-    // Check for special candy creation (4 in a row)
     for (const match of matches) {
-      if (match.special) {
-        // Create striped candy
-        updatedBoard[match.row][match.col] = {
-          ...updatedBoard[match.row][match.col],
-          isStriped: true,
-          stripeDirection: match.direction || 'horizontal'
-        };
-      } else {
-        // Mark regular matched candies for removal
-        if (updatedBoard[match.row][match.col]) {
-          updatedBoard[match.row][match.col].toRemove = true;
-        }
+      // Mark matched candies for removal
+      if (updatedBoard[match.row][match.col]) {
+        updatedBoard[match.row][match.col].toRemove = true;
       }
     }
     
-    // Wait for removal animation
     await new Promise(resolve => setTimeout(resolve, 300));
     setAnimatingRemove([]);
     
-    // Remove matched candies and refill the board
     const boardAfterRemoval = removeMatchedCandies(updatedBoard);
     setBoard(boardAfterRemoval);
     setAnimatingFall(true);
     
-    // Wait for falling animation
     await new Promise(resolve => setTimeout(resolve, 500));
     setAnimatingFall(false);
     
-    // Check for any new matches created by falling candies
     const newMatches = checkMatches(boardAfterRemoval);
     if (newMatches.length > 0) {
-      // Chain reaction - process new matches
       await processMatches(boardAfterRemoval, newMatches);
     }
   };

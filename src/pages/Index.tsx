@@ -26,7 +26,13 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-700 to-indigo-500">
+    <div 
+      className="min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
+      style={{ 
+        backgroundImage: "url('/lovable-uploads/7fd245be-2b68-4dfa-a6ee-ed009e99db02.png')",
+        backgroundSize: 'cover'
+      }}
+    >
       <div className="game-container max-w-sm w-full py-4 px-2">
         <GameHeader 
           score={score}
