@@ -6,11 +6,11 @@ export const BOARD_SIZE = {
 };
 
 export const CANDY_TYPES = {
-  BLUE: 'BLUE',
-  GREEN: 'GREEN',
-  YELLOW: 'YELLOW',
-  ORANGE: 'ORANGE',
-  BROWN: 'BROWN',
+  BLUE: 'BLUE',   // Music note
+  GREEN: 'GREEN', // Graduation cap
+  YELLOW: 'YELLOW', // Guitar
+  ORANGE: 'ORANGE', // Microphone
+  BROWN: 'BROWN', // Blockers
 };
 
 export const INITIAL_MOVES = 64;
@@ -22,6 +22,14 @@ export type CANDY_TYPE = {
   toRemove?: boolean;
   old?: boolean;
 } | null;
+
+// Define the interface for matches to include special and direction properties
+export interface MatchPosition {
+  row: number;
+  col: number;
+  special?: boolean;
+  direction?: 'horizontal' | 'vertical';
+}
 
 // Create a new game board
 export const createBoard = (): CANDY_TYPE[][] => {
@@ -64,7 +72,7 @@ export const createBoard = (): CANDY_TYPE[][] => {
 
 // Swap two candies on the board
 export const swapCandies = (board: CANDY_TYPE[][], row1: number, col1: number, row2: number, col2: number): CANDY_TYPE[][] => {
-  const newBoard = [...board];
+  const newBoard = JSON.parse(JSON.stringify(board)); // Deep copy to avoid reference issues
   const temp = newBoard[row1][col1];
   newBoard[row1][col1] = newBoard[row2][col2];
   newBoard[row2][col2] = temp;
@@ -73,9 +81,9 @@ export const swapCandies = (board: CANDY_TYPE[][], row1: number, col1: number, r
 };
 
 // Check for matches on the board
-export const checkMatches = (board: CANDY_TYPE[][]) => {
-  const matches: {row: number; col: number; special?: boolean; direction?: 'horizontal' | 'vertical'}[] = [];
-  const types = Object.values(CANDY_TYPES);
+export const checkMatches = (board: CANDY_TYPE[][]): MatchPosition[] => {
+  const matches: MatchPosition[] = [];
+  const matchedPositions = new Set<string>(); // Track positions already matched
   
   // Check for horizontal matches
   for (let row = 0; row < BOARD_SIZE.rows; row++) {
@@ -93,15 +101,19 @@ export const checkMatches = (board: CANDY_TYPE[][]) => {
         const isSpecialMatch = matchLength === 4;
         
         for (let i = 0; i < matchLength; i++) {
-          // For the first candy in a special match, mark it for special candy creation
-          const isSpecialPosition = isSpecialMatch && i === 0;
-          
-          matches.push({
-            row, 
-            col: col + i, 
-            special: isSpecialPosition,
-            direction: isSpecialPosition ? 'horizontal' : undefined
-          });
+          const position = `${row},${col + i}`;
+          if (!matchedPositions.has(position)) {
+            // For the first candy in a special match, mark it for special candy creation
+            const isSpecialPosition = isSpecialMatch && i === 0;
+            
+            matches.push({
+              row, 
+              col: col + i, 
+              special: isSpecialPosition,
+              direction: isSpecialPosition ? 'horizontal' : undefined
+            });
+            matchedPositions.add(position);
+          }
         }
         
         col += matchLength - 1; // Skip already matched candies
@@ -125,15 +137,19 @@ export const checkMatches = (board: CANDY_TYPE[][]) => {
         const isSpecialMatch = matchLength === 4;
         
         for (let i = 0; i < matchLength; i++) {
-          // For the first candy in a special match, mark it for special candy creation
-          const isSpecialPosition = isSpecialMatch && i === 0;
-          
-          matches.push({
-            row: row + i, 
-            col, 
-            special: isSpecialPosition,
-            direction: isSpecialPosition ? 'vertical' : undefined
-          });
+          const position = `${row + i},${col}`;
+          if (!matchedPositions.has(position)) {
+            // For the first candy in a special match, mark it for special candy creation
+            const isSpecialPosition = isSpecialMatch && i === 0;
+            
+            matches.push({
+              row: row + i, 
+              col, 
+              special: isSpecialPosition,
+              direction: isSpecialPosition ? 'vertical' : undefined
+            });
+            matchedPositions.add(position);
+          }
         }
         
         row += matchLength - 1; // Skip already matched candies
@@ -142,8 +158,7 @@ export const checkMatches = (board: CANDY_TYPE[][]) => {
   }
   
   // Also check for adjacent blockers to remove them
-  const matchedPositions = new Set(matches.map(m => `${m.row},${m.col}`));
-  const blockerMatches = [];
+  const blockerMatches: MatchPosition[] = [];
   
   for (const match of matches) {
     const { row, col } = match;
@@ -160,11 +175,13 @@ export const checkMatches = (board: CANDY_TYPE[][]) => {
       if (
         pos.row >= 0 && pos.row < BOARD_SIZE.rows &&
         pos.col >= 0 && pos.col < BOARD_SIZE.cols &&
-        board[pos.row][pos.col]?.type === CANDY_TYPES.BROWN &&
-        !matchedPositions.has(`${pos.row},${pos.col}`)
+        board[pos.row][pos.col]?.type === CANDY_TYPES.BROWN
       ) {
-        blockerMatches.push({ row: pos.row, col: pos.col });
-        matchedPositions.add(`${pos.row},${pos.col}`);
+        const position = `${pos.row},${pos.col}`;
+        if (!matchedPositions.has(position)) {
+          blockerMatches.push({ row: pos.row, col: pos.col });
+          matchedPositions.add(position);
+        }
       }
     }
   }
@@ -173,8 +190,8 @@ export const checkMatches = (board: CANDY_TYPE[][]) => {
 };
 
 // Generate new candies to fill empty spaces on the board
-export const generateNewCandies = (board: CANDY_TYPE[][]) => {
-  const newBoard = [...board];
+export const generateNewCandies = (board: CANDY_TYPE[][]): CANDY_TYPE[][] => {
+  const newBoard = JSON.parse(JSON.stringify(board)); // Deep copy
   const types = Object.values(CANDY_TYPES).filter(type => type !== CANDY_TYPES.BROWN);
   
   for (let col = 0; col < BOARD_SIZE.cols; col++) {
